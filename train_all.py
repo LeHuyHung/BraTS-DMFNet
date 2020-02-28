@@ -23,6 +23,30 @@ from utils import Parser, criterions
 from predict import AverageMeter
 import setproctitle  # pip install setproctitle
 
+import signal
+from contextlib import contextmanager
+
+@contextmanager
+def timeout(time):
+    # Register a function to raise a TimeoutError on the signal.
+    signal.signal(signal.SIGALRM, raise_timeout).
+    # Schedule the signal to be sent after ``time``.
+    signal.alarm(time)
+
+    try:
+        yield
+    except TimeoutError:
+        pass
+    finally:
+        # Unregister the signal so it won't be triggered
+        # if the timeout is not reached.
+        signal.signal(signal.SIGALRM, signal.SIG_IGN)
+
+
+def raise_timeout(signum, frame):
+    raise TimeoutError
+
+
 parser = argparse.ArgumentParser()
 
 parser.add_argument('-cfg', '--cfg', default='1_EESPNet_16x_PRelu_GDL_all', required=True, type=str,
@@ -85,14 +109,15 @@ def main():
     num_iters = args.num_iters or (len(train_set) * args.num_epochs) // args.batch_size
     num_iters -= args.start_iter
     train_sampler = CycleSampler(len(train_set), num_iters * args.batch_size)
-    train_loader = DataLoader(
-        dataset=train_set,
-        batch_size=args.batch_size,
-        collate_fn=train_set.collate,
-        sampler=train_sampler,
-        num_workers=args.workers,
-        pin_memory=False,
-        worker_init_fn=init_fn)
+    with timeout(600):
+        train_loader = DataLoader(
+            dataset=train_set,
+            batch_size=args.batch_size,
+            collate_fn=train_set.collate,
+            sampler=train_sampler,
+            num_workers=args.workers,
+            pin_memory=False,
+            worker_init_fn=init_fn)
 
     start = time.time()
 
