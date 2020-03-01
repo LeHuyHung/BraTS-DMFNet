@@ -27,8 +27,8 @@ opt_params:
 
 workers: 8
 
-train_list: train_0.txt
-valid_list: valid_0.txt
+#train_list: train_0.txt  # automatic in format train_{}.txt
+#valid_list: valid_0.txt  # automatic in format valid_{}.txt
 train_transforms: # for training
   Compose([
     RandCrop3D((128,128,128)),
