@@ -94,20 +94,20 @@ def main():
         collate_fn=train_set.collate, sampler=train_sampler,
         num_workers=args.workers, pin_memory=True, worker_init_fn=init_fn)
 
-    if args.valid_list:
-        valid_list = os.path.join(args.train_data_dir, 'valid_' + str(args.fold) + '.txt')
-        valid_set = Dataset(valid_list,
-                            root=args.train_data_dir,
-                            for_train=False,
-                            transforms=args.test_transforms)
+    # if args.valid_list:
+    valid_list = os.path.join(args.train_data_dir, 'valid_' + str(args.fold) + '.txt')
+    valid_set = Dataset(valid_list,
+                        root=args.train_data_dir,
+                        for_train=False,
+                        transforms=args.test_transforms)
 
-        valid_loader = DataLoader(
-            valid_set,
-            batch_size=1,
-            shuffle=False,
-            collate_fn=valid_set.collate,
-            num_workers=args.workers,
-            pin_memory=True)
+    valid_loader = DataLoader(
+        valid_set,
+        batch_size=1,
+        shuffle=False,
+        collate_fn=valid_set.collate,
+        num_workers=args.workers,
+        pin_memory=True)
 
     start = time.time()
 
