@@ -15,17 +15,17 @@ args = Parser()
 modalities = ('flair', 't1ce', 't1', 't2')
 
 train_set = {
-    'root': '../data/2018/MICCAI_BraTS_2018_Data_Training',
+    'root': 'data/2018/MICCAI_BraTS_2018_Data_Training',
     'flist': 'all.txt',
 }
 
 valid_set = {
-    'root': '../data/2018/MICCAI_BraTS_2018_Data_Validation',
+    'root': 'data/2018/MICCAI_BraTS_2018_Data_Validation',
     'flist': 'valid.txt',
 }
 
 test_set = {
-    'root': '../data/2018/MICCAI_BraTS_2018_Data_TTest',
+    'root': 'data/2018/MICCAI_BraTS_2018_Data_TTest',
     'flist': 'test.txt',
 }
 
