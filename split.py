@@ -7,8 +7,8 @@ import os
 import numpy as np
 from sklearn.model_selection import StratifiedKFold
 
-root = '../data/2018/MICCAI_BraTS_2018_Data_Training'
-valid_data_dir = '../data/2018/MICCAI_BraTS_2018_Data_Validation'
+root = 'data/2018/MICCAI_BraTS_2018_Data_Training'
+valid_data_dir = 'data/2018/MICCAI_BraTS_2018_Data_Validation'
 
 
 def write(data, fname, root=root):
