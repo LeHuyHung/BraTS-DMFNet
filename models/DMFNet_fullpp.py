@@ -66,6 +66,9 @@ class DMFNet_fullpp(nn.Module):
 
         self.up_concat03 = Up(channels, n, is_deconv=False, n_concat=4)
 
+        self.upsample_final_1 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
+        self.upsample_final_2 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
+        self.upsample_final_3 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
         self.final_1 = nn.Conv3d(n, num_classes, 1)
         self.final_2 = nn.Conv3d(n, num_classes, 1)
         self.final_3 = nn.Conv3d(n, num_classes, 1)
@@ -108,9 +111,9 @@ class DMFNet_fullpp(nn.Module):
 
         x03 = self.up_concat03(x12, x1, x01, x02)
 
-        final_1 = self.final_1(x01)
-        final_2 = self.final_2(x02)
-        final_3 = self.final_3(x03)
+        final_1 = self.final_1(self.upsample_final_1(x01))
+        final_2 = self.final_2(self.upsample_final_2(x02))
+        final_3 = self.final_3(self.upsample_final_3(x03))
 
         final = (final_1 + final_2 + final_3) / 3
 
