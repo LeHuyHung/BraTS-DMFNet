@@ -53,6 +53,7 @@ def main():
     np.random.seed(args.seed)
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    torch.cuda.set_device(device)
     Network = getattr(models, args.net)  #
     model = Network(**args.net_params)
     model = torch.nn.DataParallel(model).to(device)

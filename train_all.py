@@ -51,6 +51,7 @@ def main():
     assert torch.cuda.is_available(), "Currently, we only support CUDA version"
 
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    torch.cuda.set_device(device)
     torch.manual_seed(args.seed)
     torch.cuda.manual_seed(args.seed)
     random.seed(args.seed)
