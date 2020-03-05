@@ -193,7 +193,7 @@ def validate_softmax(
         msg += ', '.join(['{}: {:.4f}'.format(k, v) for k, v in zip(keys, vals.avg)])
         logging.info(msg)
 
-    computational_runtime(runtimes)
+    # computational_runtime(runtimes)
 
     model.train()
     return vals.avg
