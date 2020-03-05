@@ -58,7 +58,7 @@ args = parser.parse_args()
 args = Parser(args.cfg, log='train').add_args(args)
 # args.gpu = str(args.gpu)
 ckpts = args.makedir()
-args.resume = os.path.join(ckpts, args.restore)  # specify the epoch
+args.resume = args.restore  # os.path.join(ckpts, args.restore)  # specify the epoch
 
 
 def main():
