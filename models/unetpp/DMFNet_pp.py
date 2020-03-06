@@ -6,11 +6,11 @@ import torch
 from torch import nn
 
 try:
-    from .sync_batchnorm import SynchronizedBatchNorm3d
+    from models.sync_batchnorm import SynchronizedBatchNorm3d
 except:
     pass
 
-from .DMFNet_16x import normalization, Conv3d_Block, DilatedConv3DBlock, MFunit, DMFUnit
+from models.DMFNet_16x import normalization, Conv3d_Block, DilatedConv3DBlock, MFunit, DMFUnit
 
 
 class DMFNet_pp(nn.Module):
