@@ -74,7 +74,7 @@ class DMFNet_pp(nn.Module):
         x4 = self.encoder_block4(x3)
 
         # decoder
-        y1= self.upsample1(x4)
+        y1 = self.upsample1(x4)
         y1 = torch.cat([x3_res, y1], dim=1)
         y1 = self.decoder_block1(y1)
 
