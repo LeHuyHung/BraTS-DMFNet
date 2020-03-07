@@ -1,0 +1,109 @@
+"""
+This model adds MFUnit into each Residual Path, to make the gradient easier in learning. (idea from Unet++ paper)
+"""
+
+import torch
+from torch import nn
+
+try:
+    from models.sync_batchnorm import SynchronizedBatchNorm3d
+except:
+    pass
+
+from models.DMFNet_16x import normalization, Conv3d_Block, DilatedConv3DBlock, MFunit, DMFUnit
+from .squeeze_and_excitation_3D import ChannelSpatialSELayer3D
+
+
+class DMFNet_csse(nn.Module):
+    def __init__(self, c=4, n=32, channels=128, groups=16, norm='bn', num_classes=4):
+        super(DMFNet_csse, self).__init__()
+
+        # Entry flow
+        self.encoder_block1 = nn.Conv3d(c, n, kernel_size=3, padding=1, stride=2, bias=False)  # H//2
+        self.encoder_block2 = nn.Sequential(
+            DMFUnit(n, channels, g=groups, stride=2, norm=norm, dilation=[1, 2, 3]),  # H//4 down
+            DMFUnit(channels, channels, g=groups, stride=1, norm=norm, dilation=[1, 2, 3]),  # Dilated Conv 3
+            DMFUnit(channels, channels, g=groups, stride=1, norm=norm, dilation=[1, 2, 3])
+        )
+
+        self.encoder_block3 = nn.Sequential(
+            DMFUnit(channels, channels * 2, g=groups, stride=2, norm=norm, dilation=[1, 2, 3]),  # H//8
+            DMFUnit(channels * 2, channels * 2, g=groups, stride=1, norm=norm, dilation=[1, 2, 3]),  # Dilated Conv 3
+            DMFUnit(channels * 2, channels * 2, g=groups, stride=1, norm=norm, dilation=[1, 2, 3])
+        )
+
+        self.encoder_block4 = nn.Sequential(  # H//8,channels*4
+            MFunit(channels * 2, channels * 3, g=groups, stride=2, norm=norm),  # H//16
+            MFunit(channels * 3, channels * 3, g=groups, stride=1, norm=norm),
+            MFunit(channels * 3, channels * 2, g=groups, stride=1, norm=norm),
+        )
+
+        # SE blocks: use after each encoder and decoder
+        # TODO: reduction_ratio
+        reduction_ratio = 2
+        self.csse_encoder1 = ChannelSpatialSELayer3D(num_channels=n, reduction_ratio=reduction_ratio)
+        self.csse_encoder2 = ChannelSpatialSELayer3D(num_channels=channels, reduction_ratio=reduction_ratio)
+        self.csse_encoder3 = ChannelSpatialSELayer3D(num_channels=channels * 2, reduction_ratio=reduction_ratio)
+        self.csse_encoder4 = ChannelSpatialSELayer3D(num_channels=channels * 2, reduction_ratio=reduction_ratio)
+
+        self.csse_decoder1 = ChannelSpatialSELayer3D(num_channels=channels * 2, reduction_ratio=reduction_ratio)
+        self.csse_decoder2 = ChannelSpatialSELayer3D(num_channels=channels, reduction_ratio=reduction_ratio)
+        self.csse_decoder3 = ChannelSpatialSELayer3D(num_channels=n, reduction_ratio=reduction_ratio)
+
+        self.upsample1 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//8
+        self.decoder_block1 = MFunit(channels * 2 + channels * 2, channels * 2, g=groups, stride=1, norm=norm)
+
+        self.upsample2 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//4
+        self.decoder_block2 = MFunit(channels * 2 + channels, channels, g=groups, stride=1, norm=norm)
+
+        self.upsample3 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//2
+        self.decoder_block3 = MFunit(channels + n, n, g=groups, stride=1, norm=norm)
+
+        self.upsample4 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H
+        self.seg = nn.Conv3d(n, num_classes, kernel_size=1, padding=0, stride=1, bias=False)
+
+        self.softmax = nn.Softmax(dim=1)
+
+        # Initialization
+        for m in self.modules():
+            if isinstance(m, nn.Conv3d):
+                torch.nn.init.torch.nn.init.kaiming_normal_(m.weight)  #
+            elif isinstance(m, nn.BatchNorm3d) or isinstance(m, nn.GroupNorm) or isinstance(m, SynchronizedBatchNorm3d):
+                nn.init.constant_(m.weight, 1)
+                nn.init.constant_(m.bias, 0)
+
+    def forward(self, x):
+        # Encoder
+        x1 = self.encoder_block1(x)
+        x1 = self.csse_encoder1(x1)
+        x2 = self.encoder_block2(x1)
+        x2 = self.csse_encoder2(x2)
+        x3 = self.encoder_block3(x2)
+        x3 = self.csse_encoder3(x3)
+        x4 = self.encoder_block4(x3)
+        x4 = self.csse_encoder4(x4)
+
+        # decoder
+        y1 = self.upsample1(x4)
+        y1 = torch.cat([x3, y1], dim=1)
+        y1 = self.decoder_block1(y1)
+        y1 = self.csse_decoder1(y1)
+
+        y2 = self.upsample2(y1)  # H//4
+        y2 = torch.cat([x2, y2], dim=1)
+        y2 = self.decoder_block2(y2)
+        y2 = self.csse_decoder2(y2)
+
+        y3 = self.upsample3(y2)  # H//2
+        y3 = torch.cat([x1, y3], dim=1)
+        y3 = self.decoder_block3(y3)
+        y3 = self.csse_decoder3(y3)
+
+        y4 = self.upsample4(y3)
+        y4 = self.seg(y4)
+        if hasattr(self, 'softmax'):
+            y4 = self.softmax(y4)
+        return y4
+
+
+
