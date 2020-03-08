@@ -5,7 +5,7 @@ from models.unetpp.DMFNet_ppd import DMFNet_ppd
 from models.unetpp.DMFNet_fullpp import DMFNet_fullpp
 from models.attention_unet.DMFNet_attention import DMFNet_attention
 from models import DMFNet_csse
-from models import DMFNet_pe
+from models import DMFNet_pe, DMFNet_multiattention, DMFNet_attention
 
 
 if __name__ == '__main__':
@@ -17,10 +17,10 @@ if __name__ == '__main__':
     # dmfppd = DMFNet_ppd(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmffull = DMFNet_fullpp(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmfatt = DMFNet_attention(c=4, groups=16, norm='sync_bn', num_classes=4)
-    dmfpe = DMFNet_pe(c=4, groups=16, norm='sync_bn', num_classes=4)
-
+    # dmfpe = DMFNet_pe(c=4, groups=16, norm='sync_bn', num_classes=4)
+    dmf_multi_att = DMFNet_attention(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmffull.cuda(device)
-    y = dmfpe(x)
+    y = dmf_multi_att(x)
     print(y.shape)
 
 
@@ -31,5 +31,5 @@ if __name__ == '__main__':
     # print(count_parameters(dmfpp))
     # print(count_parameters(dmfppd))
     # print(count_parameters(dmffull))
-    print(count_parameters(dmfpe))
+    print(count_parameters(dmf_multi_att))
 

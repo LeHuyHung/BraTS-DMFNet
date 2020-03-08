@@ -1,4 +1,4 @@
-net: DMFNet_ppd
+net: DMFNet_attention
 net_params:
   c: 4
   n: 32
