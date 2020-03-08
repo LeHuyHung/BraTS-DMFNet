@@ -74,7 +74,8 @@ def main():
     Network = getattr(models, args.net)  #
     model = Network(**args.net_params)
 
-    model = torch.nn.DataParallel(model).cuda()
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = torch.nn.DataParallel(model).to(device)
     print(args.resume)
     assert os.path.isfile(args.resume), "no checkpoint found at {}".format(args.resume)
     print("=> loading checkpoint '{}'".format(args.resume))

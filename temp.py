@@ -5,7 +5,7 @@ from models.unetpp.DMFNet_ppd import DMFNet_ppd
 from models.unetpp.DMFNet_fullpp import DMFNet_fullpp
 from models.attention_unet.DMFNet_attention import DMFNet_attention
 from models import DMFNet_csse
-from models import DMFNet_pe, DMFNet_multiattention, DMFNet_attention
+from models import DMFNet_pe, DMFNet_multiattention, DMFNet_attention, DMFNet_singleattention
 
 
 if __name__ == '__main__':
@@ -16,12 +16,13 @@ if __name__ == '__main__':
     # dmfpp = DMFNet_pp(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmfppd = DMFNet_ppd(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmffull = DMFNet_fullpp(c=4, groups=16, norm='sync_bn', num_classes=4)
-    # dmfatt = DMFNet_attention(c=4, groups=16, norm='sync_bn', num_classes=4)
+    dmfatt = DMFNet_attention(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmfpe = DMFNet_pe(c=4, groups=16, norm='sync_bn', num_classes=4)
-    dmf_multi_att = DMFNet_attention(c=4, groups=16, norm='sync_bn', num_classes=4)
+    dmf_single_att = DMFNet_singleattention(c=4, groups=16, norm='sync_bn', num_classes=4)
+    dmf_multi_att = DMFNet_multiattention(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmffull.cuda(device)
-    y = dmf_multi_att(x)
-    print(y.shape)
+    # y = dmf_multi_att(x)
+    # print(y.shape)
 
 
     def count_parameters(model):
@@ -31,5 +32,7 @@ if __name__ == '__main__':
     # print(count_parameters(dmfpp))
     # print(count_parameters(dmfppd))
     # print(count_parameters(dmffull))
+    print(count_parameters(dmfatt))
+    print(count_parameters(dmf_single_att))
     print(count_parameters(dmf_multi_att))
 
