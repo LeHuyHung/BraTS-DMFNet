@@ -265,3 +265,6 @@ class MultiTverskyLoss(nn.Module):
         # loss = loss.to(inputs.device)
         # loss = torch.sum(loss)
         return weight_losses
+
+
+TverskyLoss = MultiTverskyLoss(alpha=0.7, beta=0.3, gamma=4.0/3)
