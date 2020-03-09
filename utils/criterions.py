@@ -1,7 +1,10 @@
 import logging
 
 import torch
+from torch import nn
 import torch.nn.functional as F
+from torch.autograd import Function
+
 
 __all__ = ['sigmoid_dice_loss', 'softmax_dice_loss', 'GeneralizedDiceLoss', 'FocalLoss']
 
@@ -133,3 +136,132 @@ def flatten(tensor):
     transposed = tensor.permute(axis_order)
     # Flatten: (C, N, D, H, W) -> (C, N * D * H * W)
     return transposed.reshape(C, -1)
+
+
+class FocalBinaryTverskyLoss(Function):
+    def __init__(ctx, alpha=0.5, beta=0.5, gamma=1.0, reduction='mean'):
+        """
+        :param alpha: controls the penalty for false positives.
+        :param beta: penalty for false negative.
+        :param gamma : focal coefficient range[1,3]
+        :param reduction: return mode
+        Notes:
+        alpha = beta = 0.5 -> dice coeff
+        alpha = beta = 1 -> tanimoto coeff
+        alpha + beta = 1 -> F beta coeff
+        add focal index -> loss=(1-T_index)**(1/gamma)
+        """
+        ctx.alpha = alpha
+        ctx.beta = beta
+        ctx.epsilon = 1e-6
+        ctx.reduction = reduction
+        ctx.gamma = gamma
+        s = ctx.beta + ctx.alpha
+        if sum != 1:
+            ctx.beta = ctx.beta / s
+            ctx.alpha = ctx.alpha / s
+
+    # @staticmethod
+    def forward(ctx, input, target):
+        batch_size = input.size(0)
+        _, input_label = input.max(1)
+
+        input_label = input_label.float()
+        target_label = target.float()
+
+        ctx.save_for_backward(input, target_label)
+
+        input_label = input_label.view(batch_size, -1)
+        target_label = target_label.view(batch_size, -1)
+
+        ctx.P_G = torch.sum(input_label * target_label, 1)  # TP
+        ctx.P_NG = torch.sum(input_label * (1 - target_label), 1)  # FP
+        ctx.NP_G = torch.sum((1 - input_label) * target_label, 1)  # FN
+
+        index = ctx.P_G / (ctx.P_G + ctx.alpha * ctx.P_NG + ctx.beta * ctx.NP_G + ctx.epsilon)
+        loss = torch.pow((1 - index), 1 / ctx.gamma)
+        # target_area = torch.sum(target_label, 1)
+        # loss[target_area == 0] = 0
+        if ctx.reduction == 'none':
+            loss = loss
+        elif ctx.reduction == 'sum':
+            loss = torch.sum(loss)
+        else:
+            loss = torch.mean(loss)
+        return loss
+
+    # @staticmethod
+    def backward(ctx, grad_out):
+        """
+        :param ctx:
+        :param grad_out:
+        :return:
+        d_loss/dT_loss=(1/gamma)*(T_loss)**(1/gamma-1)
+        (dT_loss/d_P1)  = 2*P_G*[G*(P_G+alpha*P_NG+beta*NP_G)-(G+alpha*NG)]/[(P_G+alpha*P_NG+beta*NP_G)**2]
+                        = 2*P_G
+        (dT_loss/d_p0)=
+        """
+        inputs, target = ctx.saved_tensors
+        inputs = inputs.float()
+        target = target.float()
+        batch_size = inputs.size(0)
+        sum = ctx.P_G + ctx.alpha * ctx.P_NG + ctx.beta * ctx.NP_G + ctx.epsilon
+        P_G = ctx.P_G.view(batch_size, 1, 1, 1, 1)
+        if inputs.dim() == 5:
+            sum = sum.view(batch_size, 1, 1, 1, 1)
+        elif inputs.dim() == 4:
+            sum = sum.view(batch_size, 1, 1, 1)
+            P_G = ctx.P_G.view(batch_size, 1, 1, 1)
+        sub = (ctx.alpha * (1 - target) + target) * P_G
+
+        dL_dT = (1 / ctx.gamma) * torch.pow((P_G / sum), (1 / ctx.gamma - 1))
+        dT_dp0 = -2 * (target / sum - sub / sum / sum)
+        dL_dp0 = dL_dT * dT_dp0
+
+        dT_dp1 = ctx.beta * (1 - target) * P_G / sum / sum
+        dL_dp1 = dL_dT * dT_dp1
+        grad_input = torch.cat((dL_dp1, dL_dp0), dim=1)
+        # grad_input = torch.cat((grad_out.item() * dL_dp0, dL_dp0 * grad_out.item()), dim=1)
+        return grad_input, None
+
+
+class MultiTverskyLoss(nn.Module):
+    """
+    Tversky Loss for segmentation adaptive with multi class segmentation
+    """
+
+    def __init__(self, alpha=0.5, beta=0.5, gamma=1.0, weights=None):
+        """
+        :param alpha (Tensor, float, optional): controls the penalty for false positives.
+        :param beta (Tensor, float, optional): controls the penalty for false negative.
+        :param gamma (Tensor, float, optional): focal coefficient
+        :param weights (Tensor, optional): a manual rescaling weight given to each
+            class. If given, it has to be a Tensor of size `C`
+        """
+        super(MultiTverskyLoss, self).__init__()
+        self.alpha = alpha
+        self.beta = beta
+        self.gamma = gamma
+        self.weights = weights
+
+    def forward(self, inputs, targets):
+
+        num_class = inputs.size(1)
+        weight_losses = 0.0
+        if self.weights is not None:
+            assert len(self.weights) == num_class, 'number of classes should be equal to length of weights '
+            weights = self.weights
+        else:
+            weights = [1.0 / num_class] * num_class
+        input_slices = torch.split(inputs, [1] * num_class, dim=1)
+        for idx in range(num_class):
+            input_idx = input_slices[idx]
+            input_idx = torch.cat((1 - input_idx, input_idx), dim=1)
+            target_idx = (targets == idx) * 1
+            loss_func = FocalBinaryTverskyLoss(self.alpha, self.beta, self.gamma)
+            loss_idx = loss_func(input_idx, target_idx)
+            weight_losses+=loss_idx * weights[idx]
+        # loss = torch.Tensor(weight_losses)
+        # loss = loss.to(inputs.device)
+        # loss = torch.sum(loss)
+        return weight_losses
