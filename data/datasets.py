@@ -38,6 +38,7 @@ class BraTSDataset(Dataset):
 
         x, y = torch.from_numpy(x), torch.from_numpy(y)
         # print(x.shape, y.shape)  # (240, 240, 155, 4) (240, 240, 155)
+        y[y == 4] = 3
         return x, y
 
     def __len__(self):

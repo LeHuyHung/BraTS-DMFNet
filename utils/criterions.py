@@ -12,7 +12,7 @@ cross_entropy = F.cross_entropy
 
 
 def FocalLoss(output, target, alpha=0.25, gamma=2.0):
-    target[target == 4] = 3  # label [4] -> [3]
+    # target[target == 4] = 3  # label [4] -> [3]
     # target = expand_target(target, n_class=output.size()[1]) # [N,H,W,D] -> [N,4,H,W,D]
     if output.dim() > 2:
         output = output.view(output.size(0), output.size(1), -1)  # N,C,H,W,D => N,C,H*W*D
@@ -46,7 +46,7 @@ def sigmoid_dice_loss(output, target, alpha=1e-5):
     # target: [-1,H,W,T] noted that it includes 0,1,2,4 here
     loss1 = dice(output[:, 0, ...], (target == 1).float(), eps=alpha)
     loss2 = dice(output[:, 1, ...], (target == 2).float(), eps=alpha)
-    loss3 = dice(output[:, 2, ...], (target == 4).float(), eps=alpha)
+    loss3 = dice(output[:, 2, ...], (target == 3).float(), eps=alpha)
     logging.info('1:{:.4f} | 2:{:.4f} | 4:{:.4f}'.format(1 - loss1.data, 1 - loss2.data, 1 - loss3.data))
     return loss1 + loss2 + loss3
 
@@ -56,7 +56,7 @@ def softmax_dice_loss(output, target, eps=1e-5):  #
     # target : [bsize,H,W,D]
     loss1 = dice(output[:, 1, ...], (target == 1).float())
     loss2 = dice(output[:, 2, ...], (target == 2).float())
-    loss3 = dice(output[:, 3, ...], (target == 4).float())
+    loss3 = dice(output[:, 3, ...], (target == 3).float())
     logging.info('1:{:.4f} | 2:{:.4f} | 4:{:.4f}'.format(1 - loss1.data, 1 - loss2.data, 1 - loss3.data))
 
     return loss1 + loss2 + loss3
@@ -71,7 +71,7 @@ def GeneralizedDiceLoss(output, target, eps=1e-5, weight_type='square'):  # Gene
     # target = target.float()
 
     if target.dim() == 4:
-        target[target == 4] = 3  # label [4] -> [3]
+        # target[target == 4] = 3  # label [4] -> [3]
         target = expand_target(target, n_class=output.size()[1])  # [N,H,W,D] -> [N,4，H,W,D]
 
     output = flatten(output)[1:, ...]  # transpose [N,4，H,W,D] -> [4，N,H,W,D] -> [3, N*H*W*D] voxels
@@ -245,10 +245,18 @@ class MultiTverskyLoss(nn.Module):
         self.weights = weights
 
     def forward(self, inputs, targets):
-        if targets.dim() == 4:
-            targets[targets == 4] = 3  # label [4] -> [3]
-            targets = expand_target(targets, n_class=inputs.size()[1])  # [N,H,W,D] -> [N,4，H,W,D]
+        """
+            data = torch.rand(4, in_channels, 16, 64, 64)
+            target = torch.randint(0, n_classes, size=(4, 1, 16, 64, 64)).long()
+        :param inputs:
+        :param targets:
+        :return:
+        """
+        # if targets.dim() == 4:
+        #     targets[targets == 4] = 3  # label [4] -> [3]
+        #     targets = expand_target(targets, n_class=inputs.size()[1])  # [N,H,W,D] -> [N,4，H,W,D]
 
+        targets = targets.unsqueeze(1)
         num_class = inputs.size(1)
         weight_losses = 0.0
         if self.weights is not None:
