@@ -245,6 +245,9 @@ class MultiTverskyLoss(nn.Module):
         self.weights = weights
 
     def forward(self, inputs, targets):
+        if targets.dim() == 4:
+            targets[targets == 4] = 3  # label [4] -> [3]
+            targets = expand_target(targets, n_class=inputs.size()[1])  # [N,H,W,D] -> [N,4，H,W,D]
 
         num_class = inputs.size(1)
         weight_losses = 0.0
