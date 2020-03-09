@@ -51,7 +51,7 @@ parser.add_argument('-snapshot', '--snapshot', default=False, type=str2bool,
 
 parser.add_argument('-restore_prefix', '--restore_prefix', default=argparse.SUPPRESS, type=str,
                     help='The path to restore the model.')  # 'model_epoch_300.pth'
-parser.add_argument('-restore_epoch', '--restore_epoch', default='399,499,599,699,799,899,999')
+parser.add_argument('-restore_epoch', '--restore_epoch', default='399,499,599,699,799,899,999', type=str)
 
 path = os.path.dirname(__file__)
 
@@ -61,7 +61,7 @@ args = Parser(args.cfg, log='train').add_args(args)
 # ckpts = args.makedir()
 args.resume = [args.restore_prefix + epoch + '.pth' for epoch in args.restore_epoch.split(',')]
 # sample:
-# CUDA_VISIBLE_DEVICES=1 python test.py --mode=1 --is_out=True --verbose=True --use_TTA=True --postprocess=True --snapshot=False --restore_prefix=./ckpts/DMFNet_pe_all/model_epoch_ --cfg=./ckpts/DMFNet_pe_all/cfg.yaml
+# CUDA_VISIBLE_DEVICES=1 python test_all.py --mode=1 --is_out=True --verbose=True --use_TTA=True --postprocess=True --snapshot=False --restore_prefix=./ckpts/DMFNet_pe_all/model_epoch_ --cfg=./ckpts/DMFNet_pe_all/cfg.yaml
 
 
 def main():
