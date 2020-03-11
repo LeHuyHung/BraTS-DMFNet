@@ -11,20 +11,20 @@ from models import DMFNet_pe, DMFNet_multiattention, DMFNet_attention, DMFNet_si
 if __name__ == '__main__':
     # os.environ['CUDA_VISIBLE_DEVICES'] = '0'
     # device = torch.device('cuda:0')
-    x = torch.rand((1, 4, 128, 128, 128))  # [bsize,channels,Height,Width,Depth]
+    x = torch.rand((1, 4, 240, 240, 160))  # [bsize,channels,Height,Width,Depth]
     # dmf = DMFNet(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmfpp = DMFNet_pp(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmfppd = DMFNet_ppd(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmffull = DMFNet_fullpp(c=4, groups=16, norm='sync_bn', num_classes=4)
-    # dmfatt = DMFNet_attention(c=4, groups=16, norm='sync_bn', num_classes=4)
+    model = DMFNet_attention(c=4, groups=16, channels=16, norm='sync_bn', num_classes=4)
     # dmfpe = DMFNet_pe(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmf_single_att = DMFNet_singleattention(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmf_multi_att = DMFNet_multiattention(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmffull.cuda(device)
     from models.separateinputs.example import IVD_Net_asym
-    model = DMFNet_separate_inputs(c=4, groups=16, channels=32, norm='sync_bn', num_classes=4)
-    # y = model(x)
-    # print(y.shape)
+    # model = DMFNet_separate_inputs(c=4, groups=16, channels=32, norm='sync_bn', num_classes=4)
+    y = model(x)
+    print(y.shape)
 
 
     def count_parameters(model):

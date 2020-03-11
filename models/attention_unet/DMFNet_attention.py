@@ -83,8 +83,18 @@ class UnetUp3(nn.Module):
     def forward(self, inputs1, inputs2):
         outputs2 = self.up(inputs2)
         offset = outputs2.size()[2] - inputs1.size()[2]
-        padding = 2 * [offset // 2, offset // 2, 0]
-        outputs1 = F.pad(inputs1, padding)
+
+        if offset % 2 == 0:
+            padding = [0, 0, offset // 2, offset // 2, offset // 2, offset // 2]
+        else:
+            padding = [0, 0, offset // 2, 0, 0, offset // 2]
+        if offset > 0:
+            outputs1 = F.pad(inputs1, padding)
+        else:
+            outputs1 = inputs1
+            padding = [e * -1 for e in padding]
+            outputs2 = F.pad(outputs2, padding)
+
         return self.conv(torch.cat([outputs1, outputs2], 1))
 
 
