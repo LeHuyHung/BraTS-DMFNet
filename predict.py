@@ -35,11 +35,11 @@ def softmax_output_dice(output, target):
     ret += dice_score(o, t),
     # core
     o = (output == 1) | (output == 3)
-    t = (target == 1) | (target == 4)
+    t = (target == 1) | (target == 3)
     ret += dice_score(o, t),
     # active
     o = (output == 3);
-    t = (target == 4)
+    t = (target == 3)
     ret += dice_score(o, t),
 
     return ret
