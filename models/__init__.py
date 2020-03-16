@@ -9,4 +9,5 @@ from models.csse.DMFNet_pe import DMFNet_pe
 from models.separateinputs.DMFNet_separate_inputs import DMFNet_separate_inputs
 from models.multiscale.DMFNet_multiscale import DMFNet_multiscale
 from models.custom.DMFNet_pp_double import DMFNet_pp_double
+from models.custom.DMFNet_pp_interconnect import DMFNet_pp_interconnect
 from .DMFNet_16x import MFNet, DMFNet
