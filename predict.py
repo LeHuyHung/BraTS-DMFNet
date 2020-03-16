@@ -125,11 +125,11 @@ def validate_softmax(
 
                 seg_img[np.where(output == 1)] = 1
                 seg_img[np.where(output == 2)] = 2
-                seg_img[np.where(output == 3)] = 4
+                seg_img[np.where(output == 3)] = 3
                 if verbose:
-                    print('1:', np.sum(seg_img == 1), ' | 2:', np.sum(seg_img == 2), ' | 4:', np.sum(seg_img == 4))
-                    print('WT:', np.sum((seg_img == 1) | (seg_img == 2) | (seg_img == 4)), ' | TC:',
-                          np.sum((seg_img == 1) | (seg_img == 4)), ' | ET:', np.sum(seg_img == 4))
+                    print('1:', np.sum(seg_img == 1), ' | 2:', np.sum(seg_img == 2), ' | 3:', np.sum(seg_img == 3))
+                    print('WT:', np.sum((seg_img == 1) | (seg_img == 2) | (seg_img == 3)), ' | TC:',
+                          np.sum((seg_img == 1) | (seg_img == 3)), ' | ET:', np.sum(seg_img == 3))
                 nib.save(nib.Nifti1Image(seg_img, None), oname)
 
                 if snapshot:
@@ -155,7 +155,7 @@ def validate_softmax(
             msg += ', '.join(['{}: {:.4f}'.format(k, v) for k, v in zip(keys, scores)])
 
             if snapshot:
-                # red: (255,0,0) green:(0,255,0) blue:(0,0,255) 1 for NCR & NET, 2 for ED, 4 for ET, and 0 for everything else.
+                # red: (255,0,0) green:(0,255,0) blue:(0,0,255) 1 for NCR & NET, 2 for ED, 3 for ET, and 0 for everything else.
                 gap_width = 2  # boundary width = 2
                 Snapshot_img = np.zeros(shape=(H, W * 2 + gap_width, 3, T), dtype=np.uint8)
                 Snapshot_img[:, W:W + gap_width, :] = 255  # white boundary
@@ -178,7 +178,7 @@ def validate_softmax(
                 empty_fig[np.where(output == 3)] = 255
                 Snapshot_img[:, :W, 2, :] = empty_fig
                 empty_fig = np.zeros(shape=(H, W, T), dtype=np.uint8)
-                empty_fig[np.where(target_cpu == 4)] = 255
+                empty_fig[np.where(target_cpu == 3)] = 255
                 Snapshot_img[:, W + gap_width:, 2, :] = empty_fig
 
                 for frame in range(T):
