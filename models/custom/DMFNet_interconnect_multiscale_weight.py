@@ -4,6 +4,7 @@ This model adds MFUnit into each Residual Path, to make the gradient easier in l
 
 import torch
 from torch import nn
+from torch.nn.functional import interpolate
 
 try:
     from models.sync_batchnorm import SynchronizedBatchNorm3d
@@ -12,52 +13,56 @@ except:
 
 from models.DMFNet_16x import normalization, Conv3d_Block, DilatedConv3DBlock, MFunit, DMFUnit
 
-
-class DMFNet_pp_interconnect(nn.Module):
+# TODO: not done
+class DMFNet_interconnect_multiscale_weight(nn.Module):
     def __init__(self, c=4, n=32, channels=128, groups=16, norm='bn', num_classes=4):
-        super(DMFNet_pp_interconnect, self).__init__()
+        super(DMFNet_interconnect_multiscale_weight, self).__init__()
 
         # Entry flow
         self.encoder_block1 = nn.Conv3d(c, n, kernel_size=3, padding=1, stride=2, bias=False)  # H//2
+        self.conv = nn.Conv3d(c, groups, kernel_size=3, padding=1, stride=1, bias=False)
         self.encoder_block2 = nn.Sequential(
-            DMFUnit(n, channels, g=groups, stride=2, norm=norm, dilation=[1, 2, 3]),  # H//4 down
+            DMFUnit(n + groups, channels, g=groups, stride=2, norm=norm, dilation=[1, 2, 3]),  # H//4 down
             DMFUnit(channels, channels, g=groups, stride=1, norm=norm, dilation=[1, 2, 3]),  # Dilated Conv 3
             DMFUnit(channels, channels, g=groups, stride=1, norm=norm, dilation=[1, 2, 3])
         )
 
         self.encoder_block3 = nn.Sequential(
-            DMFUnit(channels, channels * 2, g=groups, stride=2, norm=norm, dilation=[1, 2, 3]),  # H//8
+            DMFUnit(channels + groups, channels * 2, g=groups, stride=2, norm=norm, dilation=[1, 2, 3]),  # H//8
             DMFUnit(channels * 2, channels * 2, g=groups, stride=1, norm=norm, dilation=[1, 2, 3]),  # Dilated Conv 3
             DMFUnit(channels * 2, channels * 2, g=groups, stride=1, norm=norm, dilation=[1, 2, 3])
         )
 
         self.encoder_block4 = nn.Sequential(  # H//8,channels*4
-            MFunit(channels * 2, channels * 3, g=groups, stride=2, norm=norm),  # H//16
+            MFunit(channels * 2 + groups, channels * 3, g=groups, stride=2, norm=norm),  # H//16
             MFunit(channels * 3, channels * 3, g=groups, stride=1, norm=norm),
             MFunit(channels * 3, channels * 2, g=groups, stride=1, norm=norm),
         )
 
         # blocks in residual connection
         self.residual1 = MFunit(n, n, g=groups, stride=1, norm=norm)
-        self.residual2 = MFunit(channels * 2, channels, stride=1, norm=norm)
-        self.connect12 = MFunit(n, channels, stride=2, norm=norm)
-        self.residual3 = MFunit(channels * 4, channels * 2, stride=1, norm=norm)
-        self.residual4 = MFunit(channels * 4, channels * 2, stride=1, norm=norm)
-        self.connect23 = MFunit(channels, channels * 2, stride=2, norm=norm)
-        self.connect34 = MFunit(channels * 2, channels * 2, stride=2, norm=norm)
+        self.residual2 = MFunit(channels, channels, stride=1, norm=norm)
+        self.residual3 = MFunit(channels * 2, channels * 2, stride=1, norm=norm)
 
         self.upsample1 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//8
-        self.decoder_block1 = MFunit(channels * 2 + channels * 2, channels * 2, g=groups, stride=1, norm=norm)
+        self.decoder_block1 = MFunit(channels * 2 + channels * 2 + groups, channels * 2, g=groups, stride=1, norm=norm)
 
         self.upsample2 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//4
-        self.decoder_block2 = MFunit(channels * 2 + channels, channels, g=groups, stride=1, norm=norm)
+        self.decoder_block2 = MFunit(channels * 2 + channels + groups, channels, g=groups, stride=1, norm=norm)
 
         self.upsample3 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//2
-        self.decoder_block3 = MFunit(channels + n, n, g=groups, stride=1, norm=norm)
+        self.decoder_block3 = MFunit(channels + n + groups, n, g=groups, stride=1, norm=norm)
         self.upsample4 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H
         self.seg = nn.Conv3d(n, num_classes, kernel_size=1, padding=0, stride=1, bias=False)
 
         self.softmax = nn.Softmax(dim=1)
+
+        # weight for inputs
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.w01 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w02 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w04 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w08 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
 
         # Initialization
         for m in self.modules():
@@ -68,27 +73,29 @@ class DMFNet_pp_interconnect(nn.Module):
                 nn.init.constant_(m.bias, 0)
 
     def forward(self, x):
+        # 4 inputs: /1, /2, /4, /8
+        x01 = x * self.w01
+        x02 = self.conv(interpolate(x, scale_factor=1/2)) * self.w02
+        x04 = self.conv(interpolate(x, scale_factor=1/4)) * self.w04
+        x08 = self.conv(interpolate(x, scale_factor=1/8)) * self.w08
+
         # Encoder
-        x1 = self.encoder_block1(x)
+        x1 = self.encoder_block1(x01)
+        x1 = torch.cat((x1, x02), dim=1)
         x1_res = self.residual1(x1)
+
         x2 = self.encoder_block2(x1)
-        x2_down = self.connect12(x1_res)
-        x2_down = torch.cat([x2, x2_down], dim=1)
-        x2_res = self.residual2(x2_down)
+        x2 = torch.cat((x2, x04), dim=1)
+        x2_res = self.residual2(x2)
 
         x3 = self.encoder_block3(x2)
-        x3_down = self.connect23(x2_res)
-        x3_down = torch.cat([x3, x3_down], dim=1)
-        x3_res = self.residual3(x3_down)
-
+        x3 = torch.cat((x3, x08), dim=1)
+        x3_res = self.residual3(x3)
 
         x4 = self.encoder_block4(x3)
-        x4_down = self.connect34(x3_res)
-        x4_down = torch.cat([x4, x4_down], dim=1)
-        x4_res = self.residual4(x4_down)
 
         # decoder
-        y1 = self.upsample1(x4_res)
+        y1 = self.upsample1(x4)
         y1 = torch.cat([x3_res, y1], dim=1)
         y1 = self.decoder_block1(y1)
 
@@ -104,6 +111,3 @@ class DMFNet_pp_interconnect(nn.Module):
         if hasattr(self, 'softmax'):
             y4 = self.softmax(y4)
         return y4
-
-
-

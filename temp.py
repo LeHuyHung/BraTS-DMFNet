@@ -6,7 +6,7 @@ from models.unetpp.DMFNet_fullpp import DMFNet_fullpp
 from models.attention_unet.DMFNet_attention import DMFNet_attention
 from models import DMFNet_csse
 from models import DMFNet_pe, DMFNet_multiattention, DMFNet_attention, DMFNet_singleattention, DMFNet_separate_inputs,\
-    DMFNet_pp_double, DMFNet_pp_interconnect, DMFNet_multiscale_weight
+    DMFNet_pp_double, DMFNet_pp_interconnect, DMFNet_multiscale_weight, DMFNet_interconnect_multiscale_weight
 
 
 if __name__ == '__main__':
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     # dmfpp = DMFNet_pp(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmfppd = DMFNet_ppd(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmffull = DMFNet_fullpp(c=4, groups=16, norm='sync_bn', num_classes=4)
-    model = DMFNet_multiscale_weight(c=4, groups=16, channels=32, norm='sync_bn', num_classes=4)
+    model = DMFNet_pp_interconnect(c=4, groups=16, channels=128, norm='sync_bn', num_classes=4)
     # dmfpe = DMFNet_pe(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmf_single_att = DMFNet_singleattention(c=4, groups=16, norm='sync_bn', num_classes=4)
     # dmf_multi_att = DMFNet_multiattention(c=4, groups=16, norm='sync_bn', num_classes=4)
