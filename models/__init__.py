@@ -10,6 +10,6 @@ from models.separateinputs.DMFNet_separate_inputs import DMFNet_separate_inputs
 from models.multiscale.DMFNet_multiscale import DMFNet_multiscale
 from models.multiscale.DMFNet_multiscale_weight import DMFNet_multiscale_weight
 from models.custom.DMFNet_pp_double import DMFNet_pp_double
-from models.custom.DMFNet_pp_interconnect import DMFNet_pp_interconnect
+from models.custom.DMFNet_bifpn import DMFNet_bifpn
 from models.custom.DMFNet_interconnect_multiscale_weight import DMFNet_interconnect_multiscale_weight
 from .DMFNet_16x import MFNet, DMFNet
