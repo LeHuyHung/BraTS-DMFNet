@@ -1,4 +1,4 @@
-net: DMFNet_bifpn
+net: BiFPNNet
 net_params:
   n_layers: 1
   c: 4
