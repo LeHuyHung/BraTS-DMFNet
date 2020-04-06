@@ -12,4 +12,5 @@ from models.multiscale.DMFNet_multiscale_weight import DMFNet_multiscale_weight
 from models.custom.DMFNet_pp_double import DMFNet_pp_double
 from models.custom.DMFNet_bifpn import DMFNet_bifpn
 from models.custom.DMFNet_interconnect_multiscale_weight import DMFNet_interconnect_multiscale_weight
+from models.bifpn.BiFPNNet import BiFPNNet
 from .DMFNet_16x import MFNet, DMFNet

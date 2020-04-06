@@ -1,7 +1,3 @@
-"""
-This model adds MFUnit into each Residual Path, to make the gradient easier in learning. (idea from Unet++ paper)
-"""
-
 import torch
 from torch import nn
 
@@ -11,11 +7,12 @@ except:
     pass
 
 from models.DMFNet_16x import normalization, Conv3d_Block, DilatedConv3DBlock, MFunit, DMFUnit
+from models.bifpn.bifpn import BiFPN
 
 
-class DMFNet_bifpn(nn.Module):
-    def __init__(self, c=4, n=32, channels=128, groups=16, norm='bn', num_classes=4):
-        super(DMFNet_bifpn, self).__init__()
+class BiFPNNet(nn.Module):
+    def __init__(self, n_layers=1, base_unit=MFunit, c=4, n=32, channels=128, groups=16, norm='bn', num_classes=4):
+        super(BiFPNNet, self).__init__()
 
         # Entry flow
         self.encoder_block1 = nn.Conv3d(c, n, kernel_size=3, padding=1, stride=2, bias=False)  # H//2
@@ -37,26 +34,11 @@ class DMFNet_bifpn(nn.Module):
             MFunit(channels * 3, channels * 2, g=groups, stride=1, norm=norm),
         )
 
-        # blocks in residual connection
-        # TODO: up and down: use conv and deconv
-        self.residual11 = MFunit(n + channels, n, g=groups, stride=1, norm=norm)
-        self.residual21 = MFunit(channels * 3, channels, stride=1, norm=norm)
-        self.residual31 = MFunit(channels * 4, channels * 2, stride=1, norm=norm)
-        self.residual41 = MFunit(channels * 2, channels * 2, stride=1, norm=norm)
+        # BiFPN
+        self.biFPN = BiFPN(n_layers=n_layers, c=c, n=n, channels=channels,
+                           groups=groups, norm=norm, base_unit=base_unit)
 
-        self.residual12 = MFunit(n * 2, n, g=groups, stride=1, norm=norm)
-        self.residual22 = MFunit(channels * 2 + n, channels, stride=1, norm=norm)
-        self.residual32 = MFunit(channels * 5, channels * 2, stride=1, norm=norm)
-        self.residual42 = MFunit(channels * 6, channels * 2, stride=1, norm=norm)
-
-        self.connect21 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
-        self.connect32 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
-        self.connect43 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
-
-        self.connect12 = nn.MaxPool3d(kernel_size=2)
-        self.connect23 = nn.MaxPool3d(kernel_size=2)
-        self.connect34 = nn.MaxPool3d(kernel_size=2)
-
+        # DECODER
         self.upsample1 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//8
         self.decoder_block1 = MFunit(channels * 2 + channels * 2, channels * 2, g=groups, stride=1, norm=norm)
 
@@ -85,34 +67,7 @@ class DMFNet_bifpn(nn.Module):
         x3 = self.encoder_block3(x2)
         x4 = self.encoder_block4(x3)
 
-        x41 = self.residual41(x4)
-
-        x31 = self.connect43(x41)
-        x31 = torch.cat([x3, x31], dim=1)
-        x31 = self.residual31(x31)
-
-        x21 = self.connect32(x31)
-        x21 = torch.cat([x2, x21], dim=1)
-        x21 = self.residual21(x21)
-
-        x11 = self.connect21(x21)
-        x11 = torch.cat([x1, x11], dim=1)
-        x11 = self.residual11(x11)
-
-        x12 = torch.cat([x1, x11], dim=1)
-        x12 = self.residual12(x12)
-
-        x22 = self.connect12(x12)
-        x22 = torch.cat([x2, x21, x22], dim=1)
-        x22 = self.residual22(x22)
-
-        x32 = self.connect23(x22)
-        x32 = torch.cat([x3, x31, x32], dim=1)
-        x32 = self.residual32(x32)
-
-        x42 = self.connect34(x32)
-        x42 = torch.cat([x4, x41, x42], dim=1)
-        x42 = self.residual42(x42)
+        x12, x22, x32, x42 = self.biFPN(x1, x2, x3, x4)
 
         # decoder
         y1 = self.upsample1(x42)
@@ -131,6 +86,3 @@ class DMFNet_bifpn(nn.Module):
         if hasattr(self, 'softmax'):
             y4 = self.softmax(y4)
         return y4
-
-
-
