@@ -46,6 +46,68 @@ class BiFPNUnit(nn.Module):
         return x12, x22, x32, x42
 
 
+class BiFPNAddUnit(nn.Module):
+    def __init__(self, width=128, n=32, channels=128, groups=16, norm='bn', base_unit=MFunit):
+        super(BiFPNAddUnit, self).__init__()
+
+        self.conv21 = base_unit(width, width, g=groups, stride=1, norm=norm)
+        self.conv31 = base_unit(width, width, g=groups, stride=1, norm=norm)
+
+        self.conv12 = base_unit(width, width, g=groups, stride=1, norm=norm)
+        self.conv22 = base_unit(width, width, g=groups, stride=1, norm=norm)
+        self.conv32 = base_unit(width, width, g=groups, stride=1, norm=norm)
+        self.conv42 = base_unit(width, width, g=groups, stride=1, norm=norm)
+
+        self.upsample21 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
+        self.upsample32 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
+        self.upsample43 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
+
+        self.downsample12 = nn.MaxPool3d(kernel_size=2)
+        self.downsample23 = nn.MaxPool3d(kernel_size=2)
+        self.downsample34 = nn.MaxPool3d(kernel_size=2)
+
+        self.w31_1 = torch.tensor(1.0, requires_grad=True)
+        self.w31_2 = torch.tensor(1.0, requires_grad=True)
+
+        self.w21_1 = torch.tensor(1.0, requires_grad=True)
+        self.w21_2 = torch.tensor(1.0, requires_grad=True)
+
+        self.w12_1 = torch.tensor(1.0, requires_grad=True)
+        self.w12_1 = torch.tensor(1.0, requires_grad=True)
+
+        self.w22_1 = torch.tensor(1.0, requires_grad=True)
+        self.w22_2 = torch.tensor(1.0, requires_grad=True)
+        self.w22_3 = torch.tensor(1.0, requires_grad=True)
+
+        self.w32_1 = torch.tensor(1.0, requires_grad=True)
+        self.w32_2 = torch.tensor(1.0, requires_grad=True)
+        self.w32_3 = torch.tensor(1.0, requires_grad=True)
+
+        self.w42_1 = torch.tensor(1.0, requires_grad=True)
+        self.w42_2 = torch.tensor(1.0, requires_grad=True)
+
+    def forward(self, x1, x2, x3, x4):
+        x31 = self.w31_1 * x3 + self.w31_2 * self.upsample43(x4)
+        x31 = self.conv31(x31)
+
+        x21 = self.w21_1 * x2 + self.w21_2 * self.upsample32(x31)
+        x21 = self.conv21(x21)
+
+        x12 = self.w12_1 * x1 + self.w12_2 * self.upsample21(x21)
+        x12 = self.conv12(x12)
+
+        x22 = self.w22_1 * x2 + self.w22_2 * x21 + self.w22_3 * self.downsample12(x12)
+        x22 = self.conv22(x22)
+
+        x32 = self.w32_1 * x3 + self.w32_2 * x31 + self.w32_3 * self.downsample23(x22)
+        x32 = self.conv32(x32)
+
+        x42 = self.w42_1 * x4 + self.w42_2 * self.downsample34(x32)
+        x42 = self.conv42(x42)
+
+        return x12, x22, x32, x42
+
+
 class BiFPN(nn.Module):
     def __init__(self, n_layers=1, c=4, n=32, channels=128, groups=16, norm='bn', base_unit=MFunit):
         super(BiFPN, self).__init__()
