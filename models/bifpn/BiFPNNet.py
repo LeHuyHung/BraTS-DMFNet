@@ -11,7 +11,8 @@ from models.bifpn.bifpn import BiFPN
 
 
 class BiFPNNet(nn.Module):
-    def __init__(self, n_layers=1, base_unit=MFunit, c=4, n=32, channels=128, groups=16, norm='bn', num_classes=4):
+    def __init__(self, n_layers=1, base_unit=MFunit, c=4, n=32, channels=128,
+                 groups=16, norm='bn', num_classes=4, bifpn_unit='concatenate'):
         super(BiFPNNet, self).__init__()
 
         # Entry flow
@@ -36,19 +37,29 @@ class BiFPNNet(nn.Module):
 
         # BiFPN
         self.biFPN = BiFPN(n_layers=n_layers, c=c, n=n, channels=channels,
-                           groups=groups, norm=norm, base_unit=base_unit)
+                           groups=groups, norm=norm, base_unit=base_unit, bifpn_unit=bifpn_unit)
 
         # DECODER
+        if bifpn_unit == 'concatenate':
+            channels_list = [n, channels, channels * 2, channels * 2]
+        elif bifpn_unit == 'add':
+            channels_list = [channels, channels, channels, channels]
+        else:
+            raise ValueError('bifpn_unit must be concatenate or add')
+
         self.upsample1 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//8
-        self.decoder_block1 = MFunit(channels * 2 + channels * 2, channels * 2, g=groups, stride=1, norm=norm)
+        self.decoder_block1 = MFunit(channels_list[3] + channels_list[2], channels_list[2],
+                                     g=groups, stride=1, norm=norm)
 
         self.upsample2 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//4
-        self.decoder_block2 = MFunit(channels * 2 + channels, channels, g=groups, stride=1, norm=norm)
+        self.decoder_block2 = MFunit(channels_list[2] + channels_list[1], channels_list[1],
+                                     g=groups, stride=1, norm=norm)
 
         self.upsample3 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H//2
-        self.decoder_block3 = MFunit(channels + n, n, g=groups, stride=1, norm=norm)
+        self.decoder_block3 = MFunit(channels_list[1] + channels_list[0], channels_list[0],
+                                     g=groups, stride=1, norm=norm)
         self.upsample4 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H
-        self.seg = nn.Conv3d(n, num_classes, kernel_size=1, padding=0, stride=1, bias=False)
+        self.seg = nn.Conv3d(channels_list[0], num_classes, kernel_size=1, padding=0, stride=1, bias=False)
 
         self.softmax = nn.Softmax(dim=1)
 
