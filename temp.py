@@ -11,9 +11,9 @@ from models import DMFNet_pe, DMFNet_multiattention, DMFNet_attention, DMFNet_si
 
 if __name__ == '__main__':
     x = torch.rand((1, 4, 128, 128, 128))  # [bsize,channels,Height,Width,Depth]
-    model = BiFPNNet(n_layers=3, c=4, n=32, groups=16, channels=128, norm='sync_bn', num_classes=4)
-    y = model(x)
-    print(y.shape)
+    model = BiFPNNet(n_layers=3, c=4, n=32, groups=16, channels=128, norm='sync_bn', num_classes=4, bifpn_unit='add')
+    # y = model(x)
+    # print(y.shape)
 
     def count_parameters(model):
         return sum(p.numel() for p in model.parameters() if p.requires_grad)

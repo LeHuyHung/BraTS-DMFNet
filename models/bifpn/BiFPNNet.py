@@ -40,9 +40,15 @@ class BiFPNNet(nn.Module):
                            groups=groups, norm=norm, base_unit=base_unit, bifpn_unit=bifpn_unit)
 
         # DECODER
+        self.bifpn_unit = bifpn_unit
         if bifpn_unit == 'concatenate':
             channels_list = [n, channels, channels * 2, channels * 2]
         elif bifpn_unit == 'add':
+            self.convert_x1 = MFunit(n, channels, g=groups, stride=1, norm=norm)
+            self.convert_x2 = MFunit(channels, channels, g=groups, stride=1, norm=norm)
+            self.convert_x3 = MFunit(channels * 2, channels, g=groups, stride=1, norm=norm)
+            self.convert_x4 = MFunit(channels * 2, channels, g=groups, stride=1, norm=norm)
+
             channels_list = [channels, channels, channels, channels]
         else:
             raise ValueError('bifpn_unit must be concatenate or add')
@@ -77,6 +83,12 @@ class BiFPNNet(nn.Module):
         x2 = self.encoder_block2(x1)
         x3 = self.encoder_block3(x2)
         x4 = self.encoder_block4(x3)
+
+        if self.bifpn_unit == 'add':
+            x1 = self.convert_x1(x1)
+            x2 = self.convert_x2(x2)
+            x3 = self.convert_x3(x3)
+            x4 = self.convert_x4(x4)
 
         x12, x22, x32, x42 = self.biFPN(x1, x2, x3, x4)
 

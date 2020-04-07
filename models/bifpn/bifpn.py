@@ -73,7 +73,7 @@ class BiFPNAddUnit(nn.Module):
         self.w21_2 = torch.tensor(1.0, requires_grad=True)
 
         self.w12_1 = torch.tensor(1.0, requires_grad=True)
-        self.w12_1 = torch.tensor(1.0, requires_grad=True)
+        self.w12_2 = torch.tensor(1.0, requires_grad=True)
 
         self.w22_1 = torch.tensor(1.0, requires_grad=True)
         self.w22_2 = torch.tensor(1.0, requires_grad=True)
@@ -110,7 +110,7 @@ class BiFPNAddUnit(nn.Module):
 
 class BiFPN(nn.Module):
     def __init__(self, n_layers=1, n=32, channels=128, groups=16, norm='bn', base_unit=MFunit,
-                 bifpn_unit='concatenate'):
+                 bifpn_unit='concatenate', **kwargs):
         super(BiFPN, self).__init__()
         if bifpn_unit == 'concatenate':
             self.bifpn_unit = BiFPNUnit
