@@ -31,7 +31,7 @@ parser.add_argument('-cfg', '--cfg', default='1_EESPNet_16x_PRelu_GDL_all', requ
 #                     help='Supprot one GPU & multiple GPUs.')
 parser.add_argument('-batch_size', '--batch_size', default=1, type=int,
                     help='Batch size')
-parser.add_argument('-restore', '--restore', default='model_last.pth', type=str)  # model_last.pth
+parser.add_argument('-restore', '--restore', default='', type=str)  # model_last.pth
 parser.add_argument('-output_path', '--output_path', default='ckpts', type=str)
 parser.add_argument('-prefix_path', '--prefix_path', default='', type=str)
 
@@ -44,6 +44,15 @@ args = Parser(args.cfg, log='train').add_args(args)
 ckpts = args.makedir()
 
 args.resume = os.path.join(ckpts, args.restore)  # specify the epoch
+if not args.restore:
+    # load from /opt/ml/checkpoints
+    local_path = '/opt/ml/checkpoints'
+    list_checkpoints = os.listdir(local_path)
+    # get last checkpoints?
+    if list_checkpoints:
+        list_checkpoints = sorted(list_checkpoints)
+        last_checkpoints = list_checkpoints[-1]
+        args.resume = os.path.join(local_path, last_checkpoints)
 
 
 def main():
