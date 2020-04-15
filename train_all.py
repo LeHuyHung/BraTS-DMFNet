@@ -35,7 +35,7 @@ parser.add_argument('-batch_size', '--batch_size', default=1, type=int,
 parser.add_argument('-restore', '--restore', default='', type=str)  # model_last.pth
 parser.add_argument('-output_path', '--output_path', default='ckpts', type=str)
 parser.add_argument('-prefix_path', '--prefix_path', default='', type=str)
-parser.add_argument('-aws', '--aws', default=True, type=bool)
+parser.add_argument('-aws', '--aws', default=False, type=bool)
 
 path = os.path.dirname(__file__)
 
