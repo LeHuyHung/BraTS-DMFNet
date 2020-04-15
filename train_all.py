@@ -2,6 +2,7 @@
 import argparse
 import logging
 import os
+import shutil
 import random
 import time
 
@@ -34,6 +35,7 @@ parser.add_argument('-batch_size', '--batch_size', default=1, type=int,
 parser.add_argument('-restore', '--restore', default='', type=str)  # model_last.pth
 parser.add_argument('-output_path', '--output_path', default='ckpts', type=str)
 parser.add_argument('-prefix_path', '--prefix_path', default='', type=str)
+parser.add_argument('-aws', '--aws', default=True, type=bool)
 
 path = os.path.dirname(__file__)
 
@@ -46,10 +48,12 @@ ckpts = args.makedir()
 args.resume = os.path.join(ckpts, args.restore)  # specify the epoch
 if not args.restore:
     # load from /opt/ml/checkpoints
-    local_path = '/opt/ml/checkpoints'
+    local_path = '/opt/ml/checkpoints/'
     list_checkpoints = os.listdir(local_path)
     # get last checkpoints?
     if list_checkpoints:
+        for f in list_checkpoints:
+            shutil.move(os.path.join(local_path, f), ckpts)
         list_checkpoints = sorted(list_checkpoints)
         last_checkpoints = list_checkpoints[-1]
         args.resume = os.path.join(local_path, last_checkpoints)
@@ -153,12 +157,17 @@ def main():
                 or (i + 1) % int(enum_batches * (args.num_epochs - 3)) == 0 \
                 or (i + 1) % int(enum_batches * (args.num_epochs - 4)) == 0:
             file_name = os.path.join(ckpts, 'model_epoch_{}.pth'.format(epoch))
-            torch.save({
+            epoch_checkpoint = {
                 'iter': i,
                 'state_dict': model.state_dict(),
                 'optim_dict': optimizer.state_dict(),
-            },
-                file_name)
+            }
+            torch.save(epoch_checkpoint, file_name)
+
+            if args.aws:
+                torch.save(epoch_checkpoint, os.path.join('/opt/ml/checkpoints', 'model_epoch_{}.pth'.format(epoch)))
+
+            # TODO: need to save to /opt/ml/checkpoints
 
         msg = 'Iter {0:}, Epoch {1:.4f}, Loss {2:.7f}'.format(i + 1, (i + 1) / enum_batches, losses.avg)
         logging.info(msg)
