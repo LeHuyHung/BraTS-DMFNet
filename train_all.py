@@ -22,7 +22,7 @@ from data.data_utils import init_fn
 from utils import Parser, criterions
 
 from predict import AverageMeter
-import setproctitle  # pip install setproctitle
+# import setproctitle  # pip install setproctitle
 
 parser = argparse.ArgumentParser()
 
@@ -36,6 +36,7 @@ parser.add_argument('-restore', '--restore', default='', type=str)  # model_last
 parser.add_argument('-output_path', '--output_path', default='ckpts', type=str)
 parser.add_argument('-prefix_path', '--prefix_path', default='', type=str)
 parser.add_argument('-aws', '--aws', default=False, type=bool)
+parser.add_argument('-finetune', '--finetune', default=False, type=bool)
 
 path = os.path.dirname(__file__)
 
@@ -45,7 +46,7 @@ args = Parser(args.cfg, log='train').add_args(args)
 # args.net_params.device_ids= [int(x) for x in (args.gpu).split(',')]
 ckpts = args.makedir()
 
-args.resume = os.path.join(ckpts, args.restore)  # specify the epoch
+args.resume = args.restore  # specify the epoch
 if not args.restore:
     # load from /opt/ml/checkpoints
     local_path = '/opt/ml/checkpoints/'
@@ -84,7 +85,8 @@ def main():
             checkpoint = torch.load(args.resume)
             args.start_iter = checkpoint['iter']
             model.load_state_dict(checkpoint['state_dict'])
-            optimizer.load_state_dict(checkpoint['optim_dict'])
+            if not args.finetune:
+                optimizer.load_state_dict(checkpoint['optim_dict'])
             msg = ("=> loaded checkpoint '{}' (iter {})".format(args.resume, checkpoint['iter']))
         else:
             msg = "=> no checkpoint found at '{}'".format(args.resume)
