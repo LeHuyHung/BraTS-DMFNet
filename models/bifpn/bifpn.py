@@ -66,25 +66,26 @@ class BiFPNAddUnit(nn.Module):
         self.downsample23 = nn.MaxPool3d(kernel_size=2)
         self.downsample34 = nn.MaxPool3d(kernel_size=2)
 
-        self.w31_1 = torch.tensor(1.0, requires_grad=True)
-        self.w31_2 = torch.tensor(1.0, requires_grad=True)
+        device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.w31_1 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w31_2 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
 
-        self.w21_1 = torch.tensor(1.0, requires_grad=True)
-        self.w21_2 = torch.tensor(1.0, requires_grad=True)
+        self.w21_1 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w21_2 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
 
-        self.w12_1 = torch.tensor(1.0, requires_grad=True)
-        self.w12_2 = torch.tensor(1.0, requires_grad=True)
+        self.w12_1 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w12_2 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
 
-        self.w22_1 = torch.tensor(1.0, requires_grad=True)
-        self.w22_2 = torch.tensor(1.0, requires_grad=True)
-        self.w22_3 = torch.tensor(1.0, requires_grad=True)
+        self.w22_1 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w22_2 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w22_3 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
 
-        self.w32_1 = torch.tensor(1.0, requires_grad=True)
-        self.w32_2 = torch.tensor(1.0, requires_grad=True)
-        self.w32_3 = torch.tensor(1.0, requires_grad=True)
+        self.w32_1 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w32_2 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w32_3 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
 
-        self.w42_1 = torch.tensor(1.0, requires_grad=True)
-        self.w42_2 = torch.tensor(1.0, requires_grad=True)
+        self.w42_1 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
+        self.w42_2 = torch.tensor(1.0, dtype=torch.float, requires_grad=True).to(device)
 
     def forward(self, x1, x2, x3, x4):
         x31 = self.w31_1 * x3 + self.w31_2 * self.upsample43(x4)
