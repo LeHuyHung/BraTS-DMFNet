@@ -86,13 +86,16 @@ def main():
     msg = ''
     if args.resume:
         if os.path.isfile(args.resume):
-            print("=> loading checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(args.resume)
-            args.start_iter = checkpoint['iter']
-            model.load_state_dict(checkpoint['state_dict'])
-            if not args.finetune:
-                optimizer.load_state_dict(checkpoint['optim_dict'])
-            msg = ("=> loaded checkpoint '{}' (iter {})".format(args.resume, checkpoint['iter']))
+            try:
+                print("=> loading checkpoint '{}'".format(args.resume))
+                checkpoint = torch.load(args.resume)
+                args.start_iter = checkpoint['iter']
+                model.load_state_dict(checkpoint['state_dict'])
+                if not args.finetune:
+                    optimizer.load_state_dict(checkpoint['optim_dict'])
+                msg = ("=> loaded checkpoint '{}' (iter {})".format(args.resume, checkpoint['iter']))
+            except:
+                print("Raise EXCEPT: could not load checkpoint")
         else:
             msg = "=> no checkpoint found at '{}'".format(args.resume)
     else:
