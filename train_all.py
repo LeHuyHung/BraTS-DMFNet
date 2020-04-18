@@ -54,7 +54,10 @@ if not args.restore:
     # get last checkpoints?
     if list_checkpoints:
         for f in list_checkpoints:
-            shutil.move(os.path.join(local_path, f), ckpts)
+            shutil.copy2(os.path.join(local_path, f), ckpts)
+
+        list_checkpoints.sort(key=len)
+        list_checkpoints = [checkpoint for checkpoint in list_checkpoints if len(checkpoint) == len(list_checkpoints[-1])]
         list_checkpoints = sorted(list_checkpoints)
         last_checkpoints = list_checkpoints[-1]
         args.resume = os.path.join(local_path, last_checkpoints)
