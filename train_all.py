@@ -22,7 +22,7 @@ from data.data_utils import init_fn
 from utils import Parser, criterions
 
 from predict import AverageMeter
-# import setproctitle  # pip install setproctitle
+import setproctitle  # pip install setproctitle
 
 parser = argparse.ArgumentParser()
 
