@@ -89,8 +89,11 @@ def main():
             try:
                 print("=> loading checkpoint '{}'".format(args.resume))
                 checkpoint = torch.load(args.resume)
+                print('Loaded checkpoint')
                 args.start_iter = checkpoint['iter']
+                print('Applying to model')
                 model.load_state_dict(checkpoint['state_dict'])
+                print('Applied to model')
                 if not args.finetune:
                     optimizer.load_state_dict(checkpoint['optim_dict'])
                 msg = ("=> loaded checkpoint '{}' (iter {})".format(args.resume, checkpoint['iter']))
