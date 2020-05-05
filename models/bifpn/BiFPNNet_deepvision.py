@@ -67,10 +67,10 @@ class BiFPNNet_deepvision(nn.Module):
         self.upsample4 = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)  # H
 
         # DEEP SUPERVISION
-        self.final_1 = nn.Upsample(scale_factor=8)
-        self.final_2 = nn.Upsample(scale_factor=4)
+        self.final_1 = nn.ConvTranspose3d(channels_list[2], channels_list[0], kernel_size=3, stride=8, padding=0, output_padding=5)
+        self.final_2 = nn.ConvTranspose3d(channels_list[1], channels_list[0], kernel_size=3, stride=4, padding=0, output_padding=1)
 
-        self.seg = nn.Conv3d(channels_list[0] + channels_list[1] + channels_list[2], num_classes, kernel_size=1, padding=0, stride=1, bias=False)
+        self.seg = nn.Conv3d(channels_list[0] * 3, num_classes, kernel_size=1, padding=0, stride=1, bias=False)
 
         self.softmax = nn.Softmax(dim=1)
 
