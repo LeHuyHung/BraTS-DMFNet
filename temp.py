@@ -29,8 +29,9 @@ if __name__ == '__main__':
     # print(count_parameters(model))
 
     x = torch.rand((1, 4, 64, 64, 64))
-    model = BiFPNNet_deepvision(n_layers=1, c=4, n=32, groups=16, channels=32, norm='sync_bn', num_classes=4, bifpn_unit='add')
-    y = model(x)
-    print(y.size())
+    model = BiFPNNet_deepvision(n_layers=1, c=4, n=32, groups=16, channels=64, norm='sync_bn', num_classes=4, bifpn_unit='concatenate')
+    print(count_parameters(model))
+    # y = model(x)
+    # print(y.size())
     # loss = torch.sum(y)
     # loss.backward()
