@@ -53,6 +53,7 @@ parser.add_argument('-restore_prefix', '--restore_prefix', default=argparse.SUPP
                     help='The path to restore the model.')  # 'model_epoch_300.pth'
 parser.add_argument('-restore_epoch', '--restore_epoch', default='399,499,599,699,799,899,999', type=str)
 parser.add_argument('-out_dir', '--out_dir', type=str)
+parser.add_argument('-prefix_path', '--prefix_path', default='', type=str)
 
 path = os.path.dirname(__file__)
 
@@ -94,13 +95,13 @@ def main():
         logging.info(msg)
 
         if args.mode == 0:
-            root_path = args.train_data_dir
+            root_path = os.path.join(args.prefix_path, args.train_data_dir)
             is_scoring = True
         elif args.mode == 1:
-            root_path = args.valid_data_dir
+            root_path = os.path.join(args.prefix_path, args.valid_data_dir)
             is_scoring = False
         elif args.mode == 2:
-            root_path = args.test_data_dir
+            root_path = os.path.join(args.prefix_path, args.test_data_dir)
             is_scoring = False
         else:
             raise ValueError
