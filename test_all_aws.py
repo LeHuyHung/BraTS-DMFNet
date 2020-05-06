@@ -52,7 +52,7 @@ parser.add_argument('-snapshot', '--snapshot', default=False, type=str2bool,
 parser.add_argument('-restore_prefix', '--restore_prefix', default=argparse.SUPPRESS, type=str,
                     help='The path to restore the model.')  # 'model_epoch_300.pth'
 parser.add_argument('-restore_epoch', '--restore_epoch', default='399,499,599,699,799,899,999', type=str)
-parser.add_argument('-out_dir', '--out_dir', type=str)
+parser.add_argument('-out_dir', '--out_dir', default='/opt/ml/model/', type=str)
 parser.add_argument('-prefix_path', '--prefix_path', default='', type=str)
 
 path = os.path.dirname(__file__)
@@ -120,7 +120,7 @@ def main():
 
         if args.is_out:
             if args.out_dir:
-                out_dir = args.outdir + '{}/{}'.format(args.cfg, resume.split('/')[-1])
+                out_dir = args.out_dir + '{}/{}'.format(args.cfg, resume.split('/')[-1])
             else:
                 out_dir = './output/{}/{}'.format(args.cfg, resume.split('/')[-1])
 
